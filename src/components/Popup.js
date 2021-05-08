@@ -16,7 +16,8 @@ function Popup({ selected, closePopup, videoId }) {
 					<p>Actors: {selected.Actors}</p>
 				</div>
 				<button className="close" onClick={closePopup}>Close</button>
-				<Youtube className="youtube" videoId={videoId}/>
+				{(videoId!=undefined)? <Youtube className="youtube" videoId={videoId}/>: <h3 text-align="center">No trailer available!</h3>}
+				
 			</div>
 		</section>
 	)

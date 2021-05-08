@@ -26,6 +26,7 @@ function App() {
           return { ...prevState, results: results }
         })
       });
+      
     }
   }
   
@@ -38,6 +39,8 @@ function App() {
   }
 
   const openPopup = id => {
+    var result
+    var videoResult
     axios(apiurl + "&i=" + id).then(({ data }) => {
       let result = data;
       console.log(result);
@@ -52,6 +55,10 @@ function App() {
         return { ...prevState, selected: result, vidId: videoResult }
       });
         
+      }).catch(err =>{
+         setState(prevState => {
+        return { ...prevState, selected: result, vidId: undefined }
+      });
       })
 
       
