@@ -11,7 +11,7 @@ function App() {
     results: [],
     selected: {}
   });
-  const apiurl = "http://www.omdbapi.com/?apikey=dfe6d885";
+  const apiurl = "https://www.omdbapi.com/?apikey=dfe6d885";
   const APIYT = 'AIzaSyB3iOuJkCl_0uVKQXECVIPudQ9i5P9tDLU'
   const YTURL = `https://www.googleapis.com/youtube/v3/search?key=${APIYT}`
 
