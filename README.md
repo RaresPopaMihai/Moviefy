@@ -1,70 +1,176 @@
-# Getting Started with Create React App
+# Moviefy - Aplicatie web de cautare filme/seriale
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Introducere
+Moviefy este o aplicatie web dezvoltata in **reactJS
 
-## Available Scripts
+Permite utilizatorilor sa caute filme sau seriale si sa afle mai multe detalii despre ele precum :
 
-In the project directory, you can run:
+- **Rating**
+- **Director**
+- **Anul lansarii**
+- **Actorii**
+- **Productia**
 
-### `npm start`
+Pe langa detaliile filmului, utilizatorul mai are la dispozitie si **trailer-ul filmului/serialului**
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Descriere problemă 
+Aplicatia isi propune de a pune la dispozitie utilizatorilor informatii interesante/utile si un trailer, totul in acelasi loc.
+Pentru acest lucru nu este nevoie o autentificare a userului sau o stocare a anumitor date personale sau alte interactiune ce tin de partea de **server**.
+Avand toate aceste lucruri in vedere, cea mai buna solutie este aceea a unei ***aplicatii web statice***
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+O aplicatie web statica se refera la orice aplicatie care se poate livra utilizatorului final in browser, informatia din HTML, CSS sau Javascript ne mai fiind modificata pe server-side.
 
-### `npm test`
+Aplicatiile web statice vin cu o serie de avantaje:
+- Performanta sporita pentru utilizator in comparatie cu aplicatiile dinamice
+- Putine/Fara dependente pentru sistem precum bazele de date sau alte servere
+- Costuri reduse, utilizand servicii cloud, in comparatie cu mediile de dezvoltare hostate
+- Setarile de securitate sunt usor de facut si mult mai eficiente
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Structura Aplicatiei
+Aplicatia este de tip Single Page Application.
+Pagina contine:
+- Un header cu titlul aplicatiei
+- Un input in care utilizatorul poate cauta rezultatele
+- Rezultatele afisate in urma cautarii, afisand denumirea rezultatului si posterul
 
-### `npm run build`
+In momentul in care utilizatorul introduce de la tastatura ce doreste sa caute si apoi apasa enter, se face un request de tip GET prin axios, folosind API-ul **OMDB**(The Open Movie Database).
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+In momentul in care utilizatorul da click pe un rezultat se va deschide un pop-up in care sunt afisate detaliile filmului, _mai sus mentionate_. Tot atunci, in momentul in care este deschis pop-up-ul se face un request de tip GET prin axios, folosind API-ul **Youtube Data V3**, pentru a returna trailer-ul filmului.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Descrierea API-urilor folosite
+### The Open Move Database
+**OMDb API** este un serviciu web de tip REST folosit pentru a extrage informatii utile despre filme sau seriale.
+#### Mod de utilizare
+Pentru a utiliza acest API este necesar un API Key pentru care se face o cerere.
+Acest API Key este esential deoarece este un parametru pentru request-ul de tip GET 
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```javascript
+const apiurl = "https://www.omdbapi.com/?apikey=dfe6d885";
+  const search = (e) => {
+    if (e.key === "Enter") {
+      axios(apiurl + "&s=" + state.s).then(({ data }) => {
+        console.log(data)
+        let results = data.Search;
+        console.log(results)
 
-### `npm run eject`
+        setState(prevState => {
+          return { ...prevState, results: results }
+        })
+      });
+    }
+  }
+ ```
+ Pentru partea de cautare din acest API se pot utiliza mai multi parametrii:
+ | Parametru    | Necesar       | Optiuni valide           | Valoare initiala | Descriere                   |
+| ------------- |:-------------:|:------------------------:| ----------------:| ----------------------------|
+| s             | yes           |                          | <empty>          | Titlul cautarii             |
+| type          | no            |   filme,seriale,episoade | <empty>          | Tipul intors de request     |
+| y             | no            |                          | <empty>          | Anul lansarii               |
+| r             | no            |    json,xml              | json             | Tipul datelor intoarse      |
+| page          | no            |    1-100                 | 1                | Numarul de pagini returnate |
+| callback      | no            |                          | <empty>          | Numele callback-ului JSONP  |
+| v             | no            |                          | <empty>          | Versiunea API-ului          |
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+ In acest caz s-a folosit numai parametrul **s** pentru cautarea titlului
+ In urma acestui request se va stoca lista rezultatelor cautarii. In cazul in care nu s-au gasit rezultate se va afisa un mesaj in acest sens
+ 
+ In metoda openPopup s-a mai creat un request de tip GET cu parametrul **i** luat din selectia userului, ce va intoarce un obiect json cu toate detaliile importante ale selectiei
+ ```javascript
+ axios(apiurl + "&i=" + id).then(({ data }) => {
+      let result = data;
+      console.log(result);
+ ```
+ 
+ ![alt text](https://github.com/RaresPopaMihai/Moviefy/blob/master/pics/Main%20Page.JPG "Pagina Principala")
+ 
+ **Fara Rezultat**:
+ 
+  ![alt text](https://github.com/RaresPopaMihai/Moviefy/blob/master/pics/Main%20Page%20-%20No%20Result.JPG "Pagina Principala Fara Rezultat")
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Youtube Data V3
+**YouTube Data API** permite incorporarea functiilor pe care utilizatorii le folosesc pe Youtube in pagina web personala.
+#### Mod de utilizare
+In cazul acestei aplicatii a fost utilizata functia de search, pentru a obtine trailer-ul selectiei
+Ca si in cazul API-ului OMDB, este necesar un **API key** pentru a putea fi utilizat
+```javascript
+const APIYT = 'AIzaSyB3iOuJkCl_0uVKQXECVIPudQ9i5P9tDLU'
+const YTURL = `https://www.googleapis.com/youtube/v3/search?key=${APIYT}`
+const openPopup = id => {
+    var result
+    var videoResult
+    axios(apiurl + "&i=" + id).then(({ data }) => {
+      let result = data;
+      console.log(result);
+      
+      console.log(YTURL + "&q="+result.Title+" Trailer"+"&maxResults=1")
+      axios(YTURL + "&q="+result.Title+" Trailer"+"&maxResults=1").then(({data}) =>{
+        let videoResult = data.items[0].id.videoId;
+        
+        console.log(videoResult);
+        
+        setState(prevState => {
+        return { ...prevState, selected: result, vidId: videoResult }
+      });
+        
+      }).catch(err =>{
+         setState(prevState => {
+        return { ...prevState, selected: result, vidId: undefined }
+      });
+      })
+    }); 
+  }
+```
+In cadrul functiei ce se apeleaza in momentul deschiderii popUp-ului, se face un request de tip GET catre Youtube ce va contine **API key-ul** , **numele selectiei** urmat de cuvantul **_Trailer_** si parametrul **maxResults=1** care ne permite sa intoarcem doar un singur rezultat in lista.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+In cazul in care nu exista trailer pentru selectie sau numarul maxim de request-uri pe zi ( versiunea gratis a API-ului) a fost depasit, un mesaj **Trailer is not available!** se va afisa.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+**Din raspuns se va selecta din id, videoId ce contine ID-ul videclipului ce va fii pus in url-ul: ```javascript https://www.youtube.com/watch?v=... ``` in parametrul v ce va fii utilizat de un iframe pentru a afisa videoclipul**
 
-## Learn More
+Acest API are mai multi parametrii ce pot fi utilizati:
+```json
+{
+  "kind": "youtube#searchResult",
+  "etag": etag,
+  "id": {
+    "kind": string,
+    "videoId": string,
+    "channelId": string,
+    "playlistId": string
+  },
+  "snippet": {
+    "publishedAt": datetime,
+    "channelId": string,
+    "title": string,
+    "description": string,
+    "thumbnails": {
+      (key): {
+        "url": string,
+        "width": unsigned integer,
+        "height": unsigned integer
+      }
+    },
+    "channelTitle": string,
+    "liveBroadcastContent": string
+  }
+}
+```
+**Afisare Pop-up:**
+![alt text](https://github.com/RaresPopaMihai/Moviefy/blob/master/pics/Pop-up.JPG "Pop-up")
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Flux de date
+In aceasta aplicatie statica, datele circula numai intre cele 2 API-uri si Aplicatie.
+- Aplicatia trimite un request GET catre OMDB pentru lista de filme/seriale ce se regasesc in cautarea utilizatorului
+- OMDB raspunde cu lista, in cazul in care exista
+- Aplicatia trimite un request GET catre Youtube Data V3 pentru lista cu un singur rezultat pentru url-ul videoclipului
+- Youtube Data V3 raspunde cu lista, in cazul in care exista sau maximul zilnic nu a fost depasit
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+![alt text](https://github.com/RaresPopaMihai/Moviefy/blob/master/pics/Flux%20date.JPG "Flux de date")
+## Referinte
 
-### Code Splitting
+[OMDB API](https://www.omdbapi.com/)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+[Youtube Data V3 Search API](https://developers.google.com/youtube/v3/docs/search)
 
-### Analyzing the Bundle Size
+[Aplicatii Web Statice](https://www.staticapps.org/articles/defining-static-web-apps/)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+[React JS](https://reactjs.org/)
